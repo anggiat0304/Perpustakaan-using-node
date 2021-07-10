@@ -35,7 +35,7 @@ router.get('/test2',async (req,res)=>{
                 subject: 'Reminder Waktu Peminjaman',
                 text: 'Reminder Waktu Peminjaman Peminjaman Buku',
                 html :`Hai ${member.name}, waktu batas pengembalian buku ${Book.title} tinggal 1 hari lagi. Harap Anda
-                      segera mengembalikan atau anda dapat melakukan perpanjangan dengan mengklik link 
+                      segera mengembalikan atau anda dapat melakukan perpanjangan dengan mengklik <p><a href=${link}>Perpanjang</a></p>
                         `
             };
             

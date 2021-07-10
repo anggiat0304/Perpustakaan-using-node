@@ -30,57 +30,53 @@ return new Date(theDate.getTime() + days*24*60*60*1000);
 
 
 router.post('/',async (req,res)=>{
-const {tag,idMember} = req.body;
-const listOfBooks = await ListOfBooks.findOne({where:{tag:tag}});
-    const member = await Members.findOne({where:{id:idMember}});
-    if(!listOfBooks) res.json('Tag Buku tidak terdaftar')
-    else if(listOfBooks){const idBook = listOfBooks.id
-    
-    const loans = await Loans.findOne({where:{ListOfBookId:idBook,status:!'kembali'}});
-    const bukuid = listOfBooks.BookId
-    const book = await Books.findOne({where:{id:bukuid}});
-     if(!loans) res.json('tag tidak terdaftar di daftar peminjaman atau telah dikembalikan')
-    else if(listOfBooks.status=="free") res.json('Buku telah kembali')
-    else if(loans.status=="late") res.json('Buku telah terlambat dikembalikan silahkan hubungi admin')
-    else {
-            if (listOfBooks.extention < 4) {
-                Extentions.create({
-                    renewalDate: new Date(),
-                    ListOfBookId : idBook,
-                    LoanId:loans.id,
-                    MemberId:idMember,
-                    returnLimit:addDays(new Date(),member.posisition)
-                })
+        const {tag,idMember} = req.body;
+        try {
+            const listOfBooks = await ListOfBooks.findOne({where:{tag:tag}})
+            const peminjaman = await Loans.findOne({where:{ListOfBookId:listOfBooks.id,status:['dipinjam','diperpanjang']}})
+            const member = await Members.findOne({where:{id:idMember}});
+            const book = await Books.findOne({where:{id:listOfBooks.BookId}})
+            if (listOfBooks.extention < 5) {
+            Extentions.create({
+                renewalDate : new Date(),
+                returnLimit : addDays(new Date(),member.posisition),
+                ListOfBookId : listOfBooks.id,
+                LoanId : peminjaman.id,
+                MemberId : idMember
+            })
+            Loans.update({
+                status:'diperpanjang',
+                limitDate:addDays(peminjaman.limitDate, member.posisition)},{where:{ListOfBookId:listOfBooks.id,status:['dipinjam','diperpanjang']}})
+            ListOfBooks.update({extention:listOfBooks.extention+1},{where:{id:listOfBooks.id}})
+
+            var transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: 'anggiatpangaribuan12@gmail.com',
+                    pass: 'sitoluama2'
+                }
+            });
             
-                Loans.update({status:'diperpanjang',limitDate:addDays(new Date(loans.limitDate),member.posisition)},{where:{id:loans.id}});
-                ListOfBooks.update({extention:listOfBooks.extention+1},{where:{id:idBook}});
-                var transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    auth: {
-                        user: 'anggiatpangaribuan12@gmail.com',
-                        pass: 'sitoluama2'
-                    }
-                });
-                
-                
-                var mailOptions = {
-                    from: 'anggiatpangaribuan12@gmail.com',
-                    to: member.email,
-                    subject: 'Perpanjangan',
-                    text: 'Perpanjangan Buku',
-                    html :`Hai ${member.name}, anda baru saja melakukan perpanjangan buku ${book.title} di perpustakaan
-                    hingga pada tanggal ${addDays(new Date(),member.posisition)}`
-                };
-                
-                transporter.sendMail(mailOptions, (err, info) => {
-                    if (err) throw err;
-                    console.log('Email sent: ' + info.response);
-                });
-                 res.json('SUCCESS')
+            
+            var mailOptions = {
+                from: 'anggiatpangaribuan12@gmail.com',
+                to: member.email,
+                subject: 'Perpanjangan',
+                text: 'Perpanjangan Buku',
+                html :`Hai ${member.name}, anda baru saja melakukan perpanjangan buku ${book.title} di perpustakaan
+                hingga pada tanggal ${addDays(peminjaman.limitDate,member.posisition)}`
+            };
+            
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) throw err;
+                console.log('Email sent: ' + info.response);
+            });
+             res.json('SUCCESS')
             }else{
-                res.json('Perpanjangan sudah melebihi batas')
+                res.json('Perpanjangan Sudah melebihi batas')
             }
-         }
+        } catch (error) {
+            res.json(error.message)
         }
 })
 
@@ -114,9 +110,15 @@ router.get('/All',async(req,res)=>{
    }
 })
 router.get('/:id',async (req,res)=>{
-    const id = req.params.id
+    try {
+        const id = req.params.id
     const peminjaman = await Loans.findOne({where:{id:id}});
-    
+    const member = await Members.findOne({id:peminjaman.MemberId})
+    Loans.update({status:'diperpanjang',limitDate:addDays(peminjaman.limitDate,member.posisition)},{where:{id:id}});
+    res.json('ok')
+    } catch (error) {
+        res.json(error.message)
+    }
 })
 
 

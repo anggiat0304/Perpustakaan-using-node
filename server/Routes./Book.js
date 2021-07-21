@@ -6,6 +6,7 @@ var nodemailer = require('nodemailer');
 const bcrypt = require("bcrypt");
 const multer = require("multer")
 var bodyParser = require('body-parser');
+const { query } = require('express');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json()); 
@@ -77,10 +78,11 @@ router.post("/AddBook",async(req,res)=>{
 
  })
 router.get("/Books",async(req,res)=>{
-    
     const AllBook = await Books.findAll();
     res.json(AllBook);
  })
+ 
+
  
  router.get('/BookDetail',async (req,res)=>{
     const {id} = req.query;

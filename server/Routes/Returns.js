@@ -105,6 +105,23 @@ router.get('/Member',async(req,res)=>{
        res.json(error.messages)
    }
 })
+router.get('/Late',async(req,res)=>{
+    const {id} = req.query
+    try {
+        const loans = await Loans.findOne({where:{id:id}});
+        Loans.update({status:'kembali'},{where:{id:id}});
+        ListOfBooks.update({status:'free'},{where:{id:loans.ListOfBookId}});
+        Returns.create({
+            returnDate: new Date(),
+            ListOfBookId : loans.ListOfBookId,
+            LoanId: id,
+            MemberId:loans.MemberId,
+        })
+       res.json('Success');
+   } catch (error) {
+       res.json(error.messages)
+   }
+})
 router.get('/All',async(req,res)=>{
     try {
         let i = 0;

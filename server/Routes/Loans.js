@@ -60,10 +60,10 @@ router.get('/test',async (req,res)=>{
         const listOfBooks = await ListOfBooks.findOne({where:{id:ListOfBookId}});
         const Book = await Books.findOne({where:{id:listOfBooks.BookId}})
         const diff = (new Date(peminjamanOne.limitDate) - new Date())/(24*60*60*1000)
-        if (Math.ceil(diff) == 0) {
-            Loans.update({status:'late'});
+        if (Math.ceil(diff) <= 0) {
+            Loans.update({status:'late'},{where:{id:ids}});
             res.json('ok')
-        }
+        } 
     } catch (error) {
         res.json(error.message)
     }

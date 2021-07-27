@@ -2,11 +2,11 @@ module.exports = (sequelize,DataTypes)=>{
     
     const Loans  = sequelize.define("Loans",{
         loanDate :{
-            type:DataTypes.DATE(6),
+            type:DataTypes.DATEONLY,
             allowNull:false,
         },
         limitDate :{
-            type:DataTypes.DATE(6),
+            type:DataTypes.DATEONLY,
             allowNull:false,
         },
         status :{
@@ -23,6 +23,9 @@ module.exports = (sequelize,DataTypes)=>{
             onDelete :"cascade",
         })
         Loans.belongsTo(models.ListOfBooks ,{
+            onDelete :"cascade",
+        })
+        Loans.belongsTo(models.Members ,{
             onDelete :"cascade",
         })
         

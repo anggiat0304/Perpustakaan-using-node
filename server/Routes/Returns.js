@@ -96,11 +96,14 @@ router.get('/Member',async(req,res)=>{
         let i = 0;
         const member = await Members.findOne({where:{tag:tag}});
         const idMember = member.id
-       const Peminjaman = await Returns.findAll({where:{MemberId:idMember}});
-          const idBuku = Peminjaman[i++]['ListOfBookId'];
-          const ListOfBook = await ListOfBooks.findOne({where:{id:idBuku}})
-          const Buku = await Books.findOne({where:{id:ListOfBook.BookId}})
-          res.json({Buku,Peminjaman})
+        const Pengembalian = await Returns.findAll(
+            {where:{MemberId:idMember},
+             include : [
+                 {model:ListOfBooks,require:true,
+                    include:[{model:Books,require:true}
+                    ]},{model:Loans,require:true}
+            ]});
+           res.json(Pengembalian)
    } catch (error) {
        res.json(error.messages)
    }
@@ -110,7 +113,7 @@ router.get('/Late',async(req,res)=>{
     try {
         const loans = await Loans.findOne({where:{id:id}});
         Loans.update({status:'kembali'},{where:{id:id}});
-        ListOfBooks.update({status:'free'},{where:{id:loans.ListOfBookId}});
+        ListOfBooks.update({status:'free',extention:null},{where:{id:loans.ListOfBookId}});
         Returns.create({
             returnDate: new Date(),
             ListOfBookId : loans.ListOfBookId,
@@ -125,11 +128,15 @@ router.get('/Late',async(req,res)=>{
 router.get('/All',async(req,res)=>{
     try {
         let i = 0;
-       const Peminjaman = await Returns.findAll();
-          const idBuku = Peminjaman[i++]['ListOfBookId'];
-          const ListOfBook = await ListOfBooks.findOne({where:{id:idBuku}})
-          const Buku = await Books.findOne({where:{id:ListOfBook.BookId}})
-          res.json({Buku,Peminjaman})
+        const Pengembalian = await Returns.findAll({
+            include : [
+                {model:ListOfBooks,require:true,
+                   include:[{model:Books,require:true}
+                   ]}  ,{model:Members,require:true}
+                   ,{model:Loans,require:true}
+               ]}
+               );
+        res.json(Pengembalian)
    } catch (error) {
        res.json(error.messages)
    }

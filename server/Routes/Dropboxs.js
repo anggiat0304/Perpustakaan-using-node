@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express();
 const router = express.Router()
-const {Books,Dropboxs,ListOfBooks,Loans} = require('../models');
+const {Books,Dropboxs,ListOfBooks,Loans,Members} = require('../models');
 var nodemailer = require('nodemailer');
 const bcrypt = require("bcrypt");
 const multer = require("multer")
@@ -31,13 +31,13 @@ router.get('/Delete',async (req,res)=>{
 })
 router.get('/Detail',async (req,res)=>{
     const {id} = req.query
-    var i = 0;
     try {
-    const Peminjaman =  await Loans.findAll({where:{status:'box',DropboxId:id}});
-    const ListOfBookId = Peminjaman[i++]['ListOfBookId']
-    const listOfBooks = await ListOfBooks.findOne({where:{id:ListOfBookId}})
-    const book = await Books.findOne({where:{id:listOfBooks.BookId}})
-    res.json({Peminjaman,book})
+    const Peminjaman =  await Loans.findAll({where:{status:'box',DropboxId:id},
+                        include:[{model:ListOfBooks,require:true,
+                            include:[{model:Books, require:true}
+                            ]},{model:Members,require:true}]
+                        });
+    res.json(Peminjaman)
     } catch (error) {
         res.json(error.message)
     }
@@ -48,10 +48,45 @@ router.post('/Return',async(req,res)=>{
     try {
         const listOfBooks = await ListOfBooks.findOne({where:{tag:tag}});
         const dropbox = await Dropboxs.findOne({where:{id:id}});
-        const peminjaman = await Loans.findOne({where:{ListOfBookId:listOfBooks.id,status:'dipinjam'}})
-        Loans.update({status:'box',DropboxId:id},{where:{id:peminjaman.id}})
+        const peminjaman = await Loans.findOne({
+            where:{ListOfBookId:listOfBooks.id},
+            include: [{model:Members,require:true},
+                    {model:ListOfBooks,require:true,include:[{model:Books,require:true}]}]
+        });
+        if (peminjaman.status == "dipinjam" || peminjaman.status == "diperpanjang") {
+            Loans.update({status:'box',DropboxId:id},{where:{id:peminjaman.id},status:['dipinjam','diperpanjang']})
         Dropboxs.update({sumBook:dropbox.sumBook+1},{where:{id:dropbox.id}})
-        res.json('ok')
+        var transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'anggiatpangaribuan12@gmail.com',
+                pass: 'sitoluama2'
+            }
+        });
+        
+        
+        var mailOptions = {
+            from: 'anggiatpangaribuan12@gmail.com',
+            to: peminjaman.Member.email,
+            subject: 'Pengembalian',
+            text: 'Pengembalian Buku',
+            html :`Hai ${peminjaman.Member.name}, anda baru saja melakukan pengembalian buku 
+            ${peminjaman.ListOfBook.Book.title} ke dalam 
+            dropbox ${dropbox.name}
+            pada tanggal ${new Date()}`
+        };
+        
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) throw err;
+            console.log('Email sent: ' + info.response);
+            
+            res.json('SUCCESS')
+        });
+        }else if(peminjaman.status == "kembali"){
+            res.json('Buku telah dikembalikan');
+        }else if(peminjaman.status == "late"){
+            res.json('Buku sudah terlambat. Silahkan hubungi petugas perpustakaan.')
+        }
       
     } catch (error) {
        res.json(error.messages)    

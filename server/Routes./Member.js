@@ -144,4 +144,13 @@ router.post('/Account/EditAccount/:email',async (req,res)=>{
     }
     
 })
+router.get('/Account/detail',async (req,res)=>{
+    const {tag} = req.query
+    try {
+        const member = await Members.findOne({where:{tag:tag}});
+        res.json(member)
+    } catch (error) {   
+        res.json(error.message)
+    }
+})
 module.exports = router

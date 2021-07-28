@@ -215,6 +215,7 @@ router.get('/Late',async (req,res)=>{
 })
 router.get('/History',async (req,res)=>{
     const {tag} = req.query
+    var i = 0;
       try {
         const Peminjaman = await Loans.findAll({
             include : [

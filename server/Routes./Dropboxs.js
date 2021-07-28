@@ -49,12 +49,12 @@ router.post('/Return',async(req,res)=>{
         const listOfBooks = await ListOfBooks.findOne({where:{tag:tag}});
         const dropbox = await Dropboxs.findOne({where:{id:id}});
         const peminjaman = await Loans.findOne({
-            where:{ListOfBookId:listOfBooks.id},
+            where:{ListOfBookId:listOfBooks.id,status:['dipinjam','diperpanjang']},
             include: [{model:Members,require:true},
                     {model:ListOfBooks,require:true,include:[{model:Books,require:true}]}]
         });
-        if (peminjaman.status == "dipinjam" || peminjaman.status == "diperpanjang") {
-            Loans.update({status:'box',DropboxId:id},{where:{id:peminjaman.id},status:['dipinjam','diperpanjang']})
+        if (peminjaman != null) {
+            Loans.update({status:'box',DropboxId:id},{where:{id:peminjaman.id}})
         Dropboxs.update({sumBook:dropbox.sumBook+1},{where:{id:dropbox.id}})
         var transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -82,10 +82,15 @@ router.post('/Return',async(req,res)=>{
             
             res.json('SUCCESS')
         });
-        }else if(peminjaman.status == "kembali"){
-            res.json('Buku telah dikembalikan');
-        }else if(peminjaman.status == "late"){
-            res.json('Buku sudah terlambat. Silahkan hubungi petugas perpustakaan.')
+        }else{
+            const peminjaman2 = await Loans.findOne({
+                where:{ListOfBookId:listOfBooks.id},
+                include: [{model:Members,require:true},
+                        {model:ListOfBooks,require:true,include:[{model:Books,require:true}]}]
+            });
+            if(peminjaman2.status == "late") res.json("Buku sudah terlambat silahkan hubungi petugas perpustakaan")
+
+            else if(peminjaman2.status = "kembali") res.json("Buku telah berhasil dikembalikan")
         }
       
     } catch (error) {

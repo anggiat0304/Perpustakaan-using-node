@@ -131,19 +131,40 @@ router.post('/Account/ForgotAccount',async (req,res)=>{
     }
 })
 
-router.post('/Account/EditAccount/:email',async (req,res)=>{
-    const {tag} = req.body
+router.get('/Account/EditEmail/:email',async (req,res)=>{
+    const {email2} = req.query
     const email = req.params.email
-    const member = await Members.findOne({where:{email:email}});
-    if(member){
-        Members.update(
-            {tag:tag},{where :{id: member.id}}
-            )
-            res.json('ok');
-
+    try {
+        const admin = await Administrators.findOne({where:{email:email2}});
+        const member = await  Members.findOne({where:{email:email2}});
+      if (!admin  && !member ) {
+        Members.update({email:email2},{where:{email:email}});
+        res.json('ok');
+      }else{
+        res.json('Email Sudah Digunakan')
+      }
+       
+    } catch (error) {
+        res.json(error.message)
     }
-    
 })
+router.get('/Account/EditTag/:email',async (req,res)=>{
+    const {tag} = req.query
+    const email = req.params.email
+    try {
+      const admin = await  Administrators.findOne({where:{tag:tag}});
+      const member = await  Members.findOne({where:{tag:tag}});
+      if (!admin  && !member ) {
+        Members.update({tag:tag},{where:{email:email}});
+        res.json('ok');
+      }else{
+        res.json('Tag Sudah Digunakan')
+      }
+    } catch (error) {
+        res.json(error.message)
+    }
+})
+
 router.get('/Account/detail',async (req,res)=>{
     const {tag} = req.query
     try {

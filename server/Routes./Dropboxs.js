@@ -73,7 +73,7 @@ router.post('/Return',async(req,res)=>{
             html :`Hai ${peminjaman.Member.name}, anda baru saja melakukan pengembalian buku 
             ${peminjaman.ListOfBook.Book.title} ke dalam 
             dropbox ${dropbox.name}
-            pada tanggal ${new Date()}`
+            pada tanggal ${new Date()}` 
         };
         
         transporter.sendMail(mailOptions, (err, info) => {
